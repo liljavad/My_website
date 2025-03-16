@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;700&display=swap');
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: white;
+            text-align: center;
+            overflow: hidden;
+            background: url('pp.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        /* هدر با افکت نئونی */
+        header {
+            padding: 20px;
+            font-size: 30px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
+            text-shadow: 0 0 15px rgba(138, 43, 226, 0.8);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 10px #8a2be2; }
+            100% { text-shadow: 0 0 20px #e040fb; }
+        }
+
+        /* فرم اصلی */
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        /* متن‌های متحرک */
+        .animated-text {
+            display: inline-block;
+            animation: moveText 3s infinite alternate;
+        }
+
+        @keyframes moveText {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(10px); }
+        }
+
+        /* استایل عکس */
+        .image-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-container:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 1);
+        }
+
+        /* دکمه‌ها */
+        .social-buttons, .contact {
+            margin-top: 20px;
+        }
+
+        .social-buttons a, button {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            border-radius: 10px;
+            background: #8a2be2;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.7);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .social-buttons a:hover, button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(138, 43, 226, 1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>ایدی سازنده و ناتاشا </header>
+    
+    <div class="container">
+        <h2 class="animated-text">درباره ما</h2>
+
+        <!-- عکس اصلی -->
+        <div class="image-container" onclick="openLink('https://example.com')">
+            <img src="pv.jpg" alt="عکس اصلی">
+        </div>
+
+        <!-- دکمه‌های شبکه‌های اجتماعی -->
+        <div class="social-buttons">
+            <a href="tg://resolve?domain=javaadkhan" target="_blank">تلگرام ما</a>
+            <a href="tg://resolve?domain=natashha_bot" target="_blank">ناتاشا</a>
+        </div>
+    </div>
+
+    <script>
+        // لینک کلیک روی عکس
+        function openLink(url) {
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>

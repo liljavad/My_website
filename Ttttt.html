@@ -1,135 +1,127 @@
 <!DOCTYPE html>
-<html lang="fa">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;700&display=swap');
-
-        body {
-            font-family: 'Vazirmatn', sans-serif;
-            margin: 0;
-            padding: 0;
-            color: white;
-            text-align: center;
-            overflow: hidden;
-            background: url('pp.jpg') no-repeat center center fixed;
-            background-size: cover;
-        }
-
-        /* هدر با افکت نئونی */
-        header {
-            padding: 20px;
-            font-size: 30px;
-            font-weight: bold;
-            background: rgba(0, 0, 0, 0.5);
-            box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
-            text-shadow: 0 0 15px rgba(138, 43, 226, 0.8);
-            animation: glow 2s infinite alternate;
-        }
-
-        @keyframes glow {
-            0% { text-shadow: 0 0 10px #8a2be2; }
-            100% { text-shadow: 0 0 20px #e040fb; }
-        }
-
-        /* فرم اصلی */
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
-            backdrop-filter: blur(10px);
-        }
-
-        /* متن‌های متحرک */
-        .animated-text {
-            display: inline-block;
-            animation: moveText 3s infinite alternate;
-        }
-
-        @keyframes moveText {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(10px); }
-        }
-
-        /* استایل عکس */
-        .image-container {
-            position: relative;
-            width: 250px;
-            height: 250px;
-            margin: 20px auto;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(255, 0, 255, 0.7);
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-
-        .image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .image-container:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px rgba(255, 0, 255, 1);
-        }
-
-        /* دکمه‌ها */
-        .social-buttons, .contact {
-            margin-top: 20px;
-        }
-
-        .social-buttons a, button {
-            display: inline-block;
-            margin: 10px;
-            padding: 12px 20px;
-            font-size: 18px;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
-            border-radius: 10px;
-            background: #8a2be2;
-            box-shadow: 0 0 15px rgba(138, 43, 226, 0.7);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .social-buttons a:hover, button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 25px rgba(138, 43, 226, 1);
-        }
-
-    </style>
-</head>
-<body>
-
-    <header>ایدی سازنده و ناتاشا </header>
-    
-    <div class="container">
-        <h2 class="animated-text">درباره ما</h2>
-
-        <!-- عکس اصلی -->
-        <div class="image-container" onclick="openLink('https://example.com')">
-            <img src="pv.jpg" alt="عکس اصلی">
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity Web Player | My project</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width=1920 height=1080 tabindex="-1"></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
         </div>
-
-        <!-- دکمه‌های شبکه‌های اجتماعی -->
-        <div class="social-buttons">
-            <a href="tg://resolve?domain=javaadkhan" target="_blank">تلگرام ما</a>
-            <a href="tg://resolve?domain=natashha_bot" target="_blank">ناتاشا</a>
-        </div>
+      </div>
+      <div id="unity-warning"> </div>
+      <div id="unity-footer">
+        <div id="unity-logo-title-footer"></div>
+        <div id="unity-fullscreen-button"></div>
+        <div id="unity-build-title">My project</div>
+      </div>
     </div>
-
     <script>
-        // لینک کلیک روی عکس
-        function openLink(url) {
-            window.open(url, '_blank');
+      var canvas = document.querySelector("#unity-canvas");
+
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        var warningBanner = document.querySelector("#unity-warning");
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
         }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/bale bot.loader.js";
+      var config = {
+        arguments: [],
+        dataUrl: buildUrl + "/bale bot.data.gz",
+        frameworkUrl: buildUrl + "/bale bot.framework.js.gz",
+        codeUrl: buildUrl + "/bale bot.wasm.gz",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "My project",
+        productVersion: "0.1",
+        showBanner: unityShowBanner,
+      };
+
+      // By default, Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      // If you would like all file writes inside Unity Application.persistentDataPath
+      // directory to automatically persist so that the contents are remembered when
+      // the user revisits the site the next time, uncomment the following line:
+      // config.autoSyncPersistentDataPath = true;
+      // This autosyncing is currently not the default behavior to avoid regressing
+      // existing user projects that might rely on the earlier manual
+      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
+      // expected to change.
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        document.querySelector("#unity-container").className = "unity-mobile";
+        canvas.className = "unity-mobile";
+
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
+
+
+      } else {
+        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+        canvas.style.width = "1920px";
+        canvas.style.height = "1080px";
+      }
+
+      document.querySelector("#unity-loading-bar").style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+              }).then((unityInstance) => {
+                document.querySelector("#unity-loading-bar").style.display = "none";
+                document.querySelector("#unity-fullscreen-button").onclick = () => {
+                  unityInstance.SetFullscreen(1);
+                };
+
+              }).catch((message) => {
+                alert(message);
+              });
+            };
+
+      document.body.appendChild(script);
+
     </script>
-</body>
+  </body>
 </html>

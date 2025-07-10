@@ -1,1 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cyber Login v2.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --email-focus-bg: #000428;
+      --email-focus-bg-end: #004e92;
+      --password-focus-bg: #0d0d0d;
+      --password-focus-bg-end: #000000;
+      --email-glow: rgba(0, 191, 255, 0.7);
+      --password-glow: rgba(255, 255, 255, 0.6);
+    }
 
+    /* --- Base & Fonts --- */
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #e0e5ec;
+      color: #333;
+      transition: color 0.8s ease, background-color 0.8s ease;
+      overflow: hidden;
+      position: relative;
+      z-index: 0;
+    }
+
+    h1 {
+      font-family: 'VT323', monospace;
+    }
+    
+    /* --- Animated Backgrounds (NEW: Using ::before for email and ::after for password) --- */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
+      z-index: -2;
+      pointer-events: none;
+    }
+    body::before { /* Email Blue Gradient */
+      background-image: radial-gradient(circle at top, var(--email-focus-bg-end), var(--email-focus-bg));
+    }
+    body::after { /* Password Black Gradient */
+       background-image: radial-gradient(circle at top, var(--password-focus-bg-end), var(--password-focus-bg));
+    }
+    body.email-focus::before, body.password-focus::after {
+      opacity: 1;
+    }
+    body.email-focus, body.password-focus {
+      color: #f0f0f0;
+    }
+
+    /* --- Particle Canvas --- */
+    #particle-canvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -1;
+    }
+
+    /* --- Glassmorphism Login Box (ENHANCED) --- */
+    .login-box {
+      width: 100%;
+      max-width: 24rem; /* Responsive width */
+      padding: 2.5rem;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 1.5rem;
+      transition: all 0.5s ease;
+      animation: popIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+    body.email-focus .login-box, body.password-focus .login-box {
+      background: rgba(10, 10, 10, 0.3);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    body.email-focus .login-box { box-shadow: 0 0 35px var(--email-glow); }
+    body.password-focus .login-box { box-shadow: 0 0 35px var(--password-glow); }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.9) translateY(30px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* --- Form Elements (NEW: Floating Labels) --- */
+    .form-group {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+    .form-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 1rem;
+      padding-left: 2.75rem; /* Space for icon */
+      border-radius: 0.75rem;
+      outline: none;
+      color: #333;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    body.email-focus .form-input, body.password-focus .form-input {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #f0f0f0;
+    }
+    .form-input::placeholder {
+        color: transparent;
+    }
+    .form-label {
+      position: absolute;
+      top: 0.9rem;
+      left: 2.75rem;
+      font-size: 1rem;
+      color: #888;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+    body.email-focus .form-label, body.password-focus .form-label { color: rgba(255, 255, 255, 0.6); }
+
+    .form-input:focus,
+    .form-input:not(:placeholder-shown) {
+      border-color: var(--email-glow);
+    }
+    .form-input:focus + .form-label,
+    .form-input:not(:placeholder-shown) + .form-label {
+      top: -0.6rem;
+      left: 0.75rem;
+      font-size: 0.75rem;
+      background-color: #3e3e42;
+      padding: 0 0.25rem;
+      border-radius: 4px;
+      color: #fff;
+    }
+    
+    body.email-focus .form-input:focus { box-shadow: 0 0 15px -2px var(--email-glow); border-color: var(--email-glow); }
+    body.password-focus .form-input:focus { box-shadow: 0 0 15px -2px var(--password-glow); border-color: var(--password-glow); }
+
+    .input-icon {
+        position: absolute;
+        top: 0.9rem;
+        left: 1rem;
+        color: #aaa;
+        transition: color 0.3s ease;
+    }
+    body.email-focus .input-icon, body.password-focus .input-icon { color: rgba(255, 255, 255, 0.6); }
+    .form-input:focus ~ .input-icon { color: var(--email-glow); }
+    body.password-focus .form-input:focus ~ .input-icon { color: var(--password-glow); }
+    
+    .toggle-btn {
+      position: absolute;
+      right: 1rem;
+      top: 0.9rem;
+      cursor: pointer;
+      color: #aaa;
+      transition: all 0.3s ease;
+    }
+    .toggle-btn:hover { transform: scale(1.2); color: #fff; }
+
+    /* --- Submit Button (NEW DESIGN) --- */
+    .submit-btn {
+      background: linear-gradient(45deg, #6d7b8d, #3c4757);
+      color: white; border: none; padding: 1rem;
+      border-radius: 0.75rem; font-size: 1.1rem; font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .submit-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    body.email-focus .submit-btn {
+      background: linear-gradient(45deg, #00c6ff, #0072ff);
+      box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+    }
+    body.password-focus .submit-btn {
+      background: linear-gradient(45deg, #e0e0e0, #9e9e9e);
+      color: #111;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+    }
+    
+    /* --- Mascot Styling (NEW: Cyber Eye) --- */
+    .mascot-container {
+      height: 80px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .cyber-eye {
+        width: 80px; height: 40px;
+        position: relative;
+        background: #f0f0f0;
+        border-radius: 50% / 100%;
+        border-top-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border: 2px solid #333;
+        box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+        transition: all 0.5s ease;
+    }
+    body.email-focus .cyber-eye, body.password-focus .cyber-eye {
+        background: #111;
+        border-color: var(--email-glow);
+    }
+    .pupil {
+        width: 20px; height: 20px;
+        background: radial-gradient(circle, #00c6ff 20%, #0072ff 100%);
+        border-radius: 50%;
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        transition: transform 0.1s linear;
+        box-shadow: 0 0 10px #00c6ff;
+    }
+    .eyelid {
+        position: absolute;
+        top: -2px; left: -2px;
+        width: calc(100% + 4px);
+        height: 100%;
+        background: #333;
+        border-radius: inherit;
+        transform-origin: top;
+        transform: scaleY(0);
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    .mascot-container.closing .eyelid {
+        transform: scaleY(1);
+    }
+    .mascot-container.peeking .eyelid {
+        transform: scaleY(0.7) translateY(-15%);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 bg-gray-100" id="body">
+  
+  <canvas id="particle-canvas"></canvas>
+  
+  <div class="login-box" id="login-box">
+    <div class="mascot-container" id="mascot">
+        <div class="cyber-eye">
+            <div class="pupil"></div>
+            <div class="eyelid"></div>
+        </div>
+    </div>
+    
+    <h1 class="text-4xl text-center mb-8 font-bold tracking-widest uppercase">Login</h1>
+
+    <form id="login-form" onsubmit="return false;">
+        <div class="form-group">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" id="email" class="form-input" placeholder="Email" required />
+            <label for="email" class="form-label">Email</label>
+        </div>
+
+        <div class="form-group">
+             <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="password" class="form-input" placeholder="Password" required />
+            <label for="password" class="form-label">Password</label>
+            <span class="toggle-btn" onclick="togglePassword()">
+              <i id="eye-icon" class="fas fa-eye"></i>
+            </span>
+        </div>
+
+        <button type="submit" class="w-full submit-btn mt-6">
+            Sign In
+        </button>
+    </form>
+  </div>
+
+  <script>
+    const body = document.getElementById("body");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const mascot = document.getElementById("mascot");
+
+    // --- Theme Control ---
+    emailInput.addEventListener('focus', () => body.classList.add('email-focus'));
+    emailInput.addEventListener('blur', () => body.classList.remove('email-focus'));
+    passwordInput.addEventListener('focus', () => body.classList.add('password-focus'));
+    passwordInput.addEventListener('blur', () => body.classList.remove('password-focus'));
+
+    // --- Mascot Control (NEW: Eyelid) ---
+    passwordInput.addEventListener('focus', () => mascot.classList.add('closing'));
+    passwordInput.addEventListener('blur', () => {
+        mascot.classList.remove('closing', 'peeking');
+    });
+
+    function togglePassword() {
+      const passField = document.getElementById("password");
+      const icon = document.getElementById("eye-icon");
+      const isPassword = passField.type === "password";
+      
+      passField.type = isPassword ? "text" : "password";
+      icon.classList.toggle("fa-eye-slash", isPassword);
+      icon.classList.toggle("fa-eye", !isPassword);
+      
+      mascot.classList.toggle('peeking', isPassword);
+      if(!isPassword) { // if showing password
+          setTimeout(() => mascot.classList.remove('peeking'), 1500);
+      }
+    }
+
+    // --- Mascot Eye Follows Mouse ---
+    document.addEventListener('mousemove', (e) => {
+        if (mascot.classList.contains('closing')) {
+             document.querySelector('.pupil').style.transform = `translate(-50%, -50%)`;
+             return;
+        }
+        const eye = document.querySelector('.cyber-eye');
+        if (!eye) return;
+        
+        const { clientX, clientY } = e;
+        const rect = eye.getBoundingClientRect();
+        const eyeCenterX = rect.left + rect.width / 2;
+        const eyeCenterY = rect.top + rect.height / 2;
+        const deltaX = clientX - eyeCenterX;
+        const deltaY = clientY - eyeCenterY;
+        const angle = Math.atan2(deltaY, deltaX);
+        const radiusX = rect.width * 0.25;
+        const radiusY = rect.height * 0.25;
+
+        const pupilX = radiusX * Math.cos(angle);
+        const pupilY = radiusY * Math.sin(angle);
+        document.querySelector('.pupil').style.transform = `translate(calc(-50% + ${pupilX}px), calc(-50% + ${pupilY}px))`;
+    });
+
+
+    // --- UNIFIED CANVAS ANIMATION ---
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    let particles = [];
+    const particleCount = 200;
+    
+    let stars = [];
+    const starCount = 800; // More stars for a denser field
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        // Re-initialize animations
+        initParticles();
+        initStars();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // --- PARTICLE LOGIC ---
+    function initParticles() {
+        particles = [];
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 1,
+                speedX: (Math.random() * 1 - 0.5) * 0.5,
+                speedY: (Math.random() * 1 - 0.5) * 0.5
+            });
+        }
+    }
+    function handleParticles(color) {
+        ctx.fillStyle = color;
+        for (const p of particles) {
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if (p.x > canvas.width || p.x < 0) p.speedX *= -1;
+            if (p.y > canvas.height || p.y < 0) p.speedY *= -1;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    // --- STARFIELD LOGIC (NEW: Warp Speed) ---
+    function initStars() {
+        stars = [];
+        for (let i = 0; i < starCount; i++) {
+            stars.push({
+                x: (Math.random() - 0.5) * canvas.width,
+                y: (Math.random() - 0.5) * canvas.height,
+                z: Math.random() * canvas.width
+            });
+        }
+    }
+    function handleStars() {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const focalLength = canvas.width;
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        for (const star of stars) {
+            star.z -= 2; // Speed of warp
+
+            if (star.z <= 0) {
+                star.x = (Math.random() - 0.5) * canvas.width;
+                star.y = (Math.random() - 0.5) * canvas.height;
+                star.z = canvas.width;
+            }
+
+            const scale = focalLength / star.z;
+            const sx = star.x * scale + centerX;
+            const sy = star.y * scale + centerY;
+            const size = (1 - star.z / canvas.width) * 4;
+            
+            if (sx > 0 && sx < canvas.width && sy > 0 && sy < canvas.height) {
+                ctx.beginPath();
+                ctx.arc(sx, sy, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    // --- MAIN ANIMATION LOOP ---
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (body.classList.contains('password-focus')) {
+            handleStars();
+        } else if (body.classList.contains('email-focus')) {
+            handleParticles('rgba(255, 255, 255, 0.4)');
+        } else {
+            handleParticles('rgba(0, 0, 0, 0.2)');
+        }
+        
+        animationFrameId = requestAnimationFrame(animate);
+    }
+
+    // Initialize and start
+    resizeCanvas();
+    animate();
+  </script>
+</body>
+</html>

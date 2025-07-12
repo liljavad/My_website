@@ -1,139 +1,409 @@
-<script defer>
-    // --- FINAL, FULLY OPTIMIZED & RESPONSIVE SCRIPT ---
-
-    // --- DOM Element Setup ---
-    const body = document.body;
-    const loginBox = document.getElementById('login-box');
-    const passwordInput = document.getElementById('password');
-    const emailInput = document.getElementById('email');
-    const submitBtn = document.getElementById('submit-btn');
-    const canvas = document.getElementById('particle-canvas');
-    const ctx = canvas.getContext('2d');
-    
-    let particlesArray = [];
-    let mouseMoveUpdateQueued = false;
-    let resizeTimeout;
-
-    // --- 🚀 Performance Manager ---
-    const PerformanceManager = {
-        level: 'HIGH',
-        initialize: function() {
-            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (prefersReducedMotion) {
-                this.level = 'LOW';
-                return;
-            }
-            const coreCount = navigator.hardwareConcurrency || 4;
-            if (coreCount <= 4) {
-                this.level = 'LOW';
-            }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Nexus Login - Final & Working</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --transition-speed: 0.4s;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
         }
-    };
-    PerformanceManager.initialize();
-    body.classList.add(PerformanceManager.level === 'LOW' ? 'performance-low' : 'performance-high');
 
-    // --- Mouse Move Handler ---
-    window.addEventListener('mousemove', (e) => {
-        if (mouseMoveUpdateQueued) return;
-        mouseMoveUpdateQueued = true;
-        requestAnimationFrame(() => {
-            if (body.classList.contains('aurora-enabled')) {
-                body.style.setProperty('--mouse-x', `${e.clientX}px`);
-                body.style.setProperty('--mouse-y', `${e.clientY}px`);
+        /* --- THEMES --- */
+        body.theme-light {
+            --surface: rgba(255, 255, 255, 0.6); --primary: #7B68EE;
+            --text-primary: #1F2937; --text-secondary: #6B7280; --shadow-color: rgba(217, 222, 235, 0.7);
+            --input-bg: #F9FAFB; --input-border: #F3F4F6; --particle-color-rgb: 123, 104, 238;
+            --aurora-1: hsl(231, 85%, 95%); --aurora-2: hsl(263, 85%, 95%); --aurora-3: hsl(314, 85%, 95%);
+        }
+        body.theme-dark {
+            --surface: rgba(17, 24, 39, 0.6); --primary: #00C9FF;
+            --text-primary: #F9FAFB; --text-secondary: #9CA3AF; --shadow-color: rgba(0,0,0,0.4);
+            --input-bg: #1F2937; --input-border: #374151; --particle-color-rgb: 0, 201, 255;
+            --aurora-1: hsl(210, 50%, 15%); --aurora-2: hsl(190, 60%, 20%); --aurora-3: hsl(220, 60%, 25%);
+        }
+        
+        /* --- BASE STYLES --- */
+        body {
+            font-family: 'Poppins', sans-serif; color: var(--text-primary);
+            background-color: var(--aurora-1); display: flex; align-items: center; justify-content: center; min-height: 100vh;
+            padding: 1rem; transition: background-color var(--transition-speed), color var(--transition-speed); overflow: hidden; position: relative;
+        }
+        #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .login-container { position: relative; width: 100%; max-width: 350px; perspective: 1000px; }
+        
+        /* --- AURORA EFFECT --- */
+        body.aurora-enabled::before {
+            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                radial-gradient(circle at var(--mouse-x) var(--mouse-y), hsla(0, 0%, 100%, 0.1), transparent 20vmax),
+                radial-gradient(circle at 10% 20%, var(--aurora-2), transparent 25vmax),
+                radial-gradient(circle at 90% 30%, var(--aurora-3), transparent 25vmax),
+                radial-gradient(circle at 50% 90%, var(--aurora-1), transparent 25vmax);
+            mix-blend-mode: screen; animation: aurora-anim 20s linear infinite; will-change: background; z-index: -2;
+        }
+        @keyframes aurora-anim { from { background-position: 0% 50%, 0% 0%, 0% 0%, 0% 0%; } to { background-position: 0% 50%, 20% 20%, -20% -20%, 0% 0%; } }
+        body.performance-low.aurora-enabled::before { animation: none; }
+        
+        /* --- MAIN LOGIN BOX & FLIP ANIMATION --- */
+        .login-box {
+            background-color: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            box-shadow: 0px 20px 40px -10px var(--shadow-color);
+            text-align: center;
+            animation: form-fade-in 1s ease-out forwards;
+            height: 580px;
+            transition: height 0.6s ease-in-out;
+            position: relative; /* Added to contain the flipper */
+        }
+        .flipper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+        }
+        .login-box.show-register { height: 480px; }
+        .flipper.show-register { transform: rotateY(180deg); }
+
+        #login-form, #register-form {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            padding: 40px 30px 30px;
+            box-sizing: border-box;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        #register-form { transform: rotateY(180deg); }
+        .login-box.shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+        /* --- FORM ELEMENTS --- */
+        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+        .subtitle { color: var(--text-secondary); margin-bottom: 28px; font-size: 0.9rem; }
+        .form-group { position: relative; margin-bottom: 20px; }
+        .form-input { width: 100%; background-color: var(--input-bg); border: 2px solid var(--input-border); border-radius: 14px; padding: 14px 8px; font-size: 0.95rem; color: var(--text-primary); outline: none; transition: all var(--transition-speed); }
+        .input-label { position: absolute; top: 13px; left: 17px; color: var(--text-secondary); pointer-events: none; background-color: var(--input-bg); transform-origin: left; transition: all var(--transition-speed); }
+        .form-input:focus { border-color: var(--primary); background-color: var(--surface); }
+        .form-input:focus + .input-label,
+        .form-input:not(:placeholder-shown) + .input-label { background-color: var(--surface); transform: translateY(-25px) scale(0.85); color: var(--primary); padding: 2px 6px; font-weight: 500; border-radius: 6px; }
+        .toggle-btn { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); z-index: 2; }
+        .submit-btn {
+            width: 100%; padding: 14px; margin-top: 15px; border-radius: 12px;
+            background-image: linear-gradient(45deg, #00C9FF, #0072FF);
+            background-size: 200%; background-position: left; color: #fff; font-size: 1rem; font-weight: 600;
+            cursor: pointer; border: none; box-shadow: 0 4px 20px rgba(0, 201, 255, 0.35);
+            transition: all var(--transition-speed) ease;
+        }
+        .submit-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 7px 25px rgba(0, 114, 255, 0.4); background-position: right; }
+        .error-message {
+            color: #f87171; background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px; padding: 10px; font-size: 0.85rem; font-weight: 500;
+            margin-bottom: 15px; display: none; animation: fade-in 0.3s ease forwards;
+        }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .form-options { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; margin-bottom: 15px; font-size: 0.8rem; }
+        .remember-me { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+        .remember-me label { cursor: pointer; }
+        .forgot-password { color: var(--primary); text-decoration: none; font-weight: 500; }
+        .forgot-password:hover { text-decoration: underline; }
+        .social-divider { margin: 20px 0; color: var(--text-secondary); font-size: 0.8rem; }
+        .social-logins { display: flex; justify-content: center; gap: 16px; }
+        .social-btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background-color: var(--surface); border: 1px solid var(--input-border); border-radius: 50%; color: var(--text-secondary); font-size: 1.1rem; text-decoration: none; }
+        .social-btn:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+        .form-footer { margin-top: 24px; font-size: 0.8rem; color: var(--text-secondary); }
+        .form-footer a { color: var(--primary); font-weight: 500; text-decoration: none; }
+        
+        /* --- UI CONTROLS (THEME/SETTINGS) --- */
+        .theme-switcher, .settings-toggle {
+            position: fixed; top: 20px; width: 44px; height: 44px;
+            background-color: var(--surface); border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; box-shadow: 0 4px 15px var(--shadow-color);
+            transition: all var(--transition-speed); z-index: 100;
+        }
+        .theme-switcher { right: 20px; }
+        .settings-toggle { left: 20px; }
+        .theme-switcher:hover, .settings-toggle:hover { transform: translateY(-2px) scale(1.05); }
+        .theme-switcher i { color: var(--primary); font-size: 1.2rem; position: absolute; transition: opacity 0.2s, transform 0.2s; }
+        .theme-switcher .fa-sun { opacity: 0; transform: scale(0); }
+        body.theme-dark .fa-sun { opacity: 1; transform: scale(1); }
+        body.theme-dark .fa-moon { opacity: 0; transform: scale(0); }
+        .settings-toggle i { color: var(--primary); }
+        .settings-panel {
+            position: fixed; left: 20px; top: 80px; background: var(--surface); backdrop-filter: blur(10px);
+            border-radius: 16px; padding: 10px; box-shadow: 0 4px 20px var(--shadow-color); z-index: 100;
+            transform: scale(0.95) translateX(-20px) ; opacity: 0; pointer-events: none; transition: all 0.3s ease-out;
+        }
+        .settings-panel.visible { transform: scale(1) translateX(0); opacity: 1; pointer-events: all; }
+        .settings-panel .setting { display: flex; align-items: center; margin-bottom: 5px; font-size: 0.9rem; }
+        .settings-panel label { margin-left: 8px; cursor: pointer; }
+
+        /* --- RESPONSIVENESS --- */
+        @media (max-width: 480px) {
+            .login-box { height: 560px; }
+            .login-box.show-register { height: 460px; }
+            #login-form, #register-form { padding: 30px 20px 20px; }
+            h1 { font-size: 1.6rem; }
+            .form-input, .submit-btn { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body class="theme-dark">
+
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="theme-switcher" id="theme-switcher">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun"></i>
+    </div>
+
+    <div class="settings-toggle" id="settings-toggle">
+        <i class="fas fa-cog"></i>
+    </div>
+    <div class="settings-panel" id="settings-panel">
+        <div class="setting">
+            <input type="checkbox" id="aurora-toggle">
+            <label for="aurora-toggle">Aurora Effect</label>
+        </div>
+        <div class="setting">
+            <input type="checkbox" id="tilt-toggle">
+            <label for="tilt-toggle">3D Tilt Effect</label>
+        </div>
+    </div>
+
+    <div class="login-container" id="login-container">
+        <div class="login-box" id="login-box">
+            <div class="flipper" id="flipper">
+                <form id="login-form">
+                    <h1>Welcome Back!</h1>
+                    <p class="subtitle">Enter your credentials to continue</p>
+                    <div class="form-group">
+                        <input type="email" id="email" class="form-input" required placeholder=" ">
+                        <label for="email" class="input-label">Email</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" class="form-input" required placeholder=" ">
+                        <label for="password" class="input-label">Password</label>
+                        <span class="toggle-btn" onclick="togglePassword(event, 'password', 'eye-icon')"><i id="eye-icon" class="fas fa-eye"></i></span>
+                    </div>
+                    <div class="form-options">
+                        <div class="remember-me">
+                            <input type="checkbox" id="remember-me">
+                            <label for="remember-me">Remember me</label>
+                        </div>
+                        <a href="#" class="forgot-password">Forgot Password?</a>
+                    </div>
+                    <p class="error-message" id="login-error-message"></p>
+                    <button type="submit" class="submit-btn">Sign In</button>
+                    <div class="social-divider">or</div>
+                    <div class="social-logins">
+                        <a href="#" class="social-btn"><i class="fab fa-google"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-btn"><i class="fab fa-apple"></i></a>
+                    </div>
+                    <div class="form-footer">
+                        <p>Don't have an account? <a href="#" id="show-register-link">Register</a></p>
+                    </div>
+                </form>
+
+                <form id="register-form">
+                    <h1>Create Account</h1>
+                    <p class="subtitle">Get started with your new account</p>
+                    <div class="form-group">
+                        <input type="text" id="reg-username" class="form-input" required placeholder=" ">
+                        <label for="reg-username" class="input-label">Username</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="reg-email" class="form-input" required placeholder=" ">
+                        <label for="reg-email" class="input-label">Email</label>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="reg-password" class="form-input" required placeholder=" ">
+                        <label for="reg-password" class="input-label">Password</label>
+                        <span class="toggle-btn" onclick="togglePassword(event, 'reg-password', 'reg-eye-icon')"><i id="reg-eye-icon" class="fas fa-eye"></i></span>
+                    </div>
+                    <p class="error-message" id="register-error-message"></p>
+                    <button type="submit" class="submit-btn">Register</button>
+                    <div class="form-footer">
+                        <p>Already have an account? <a href="#" id="show-login-link">Login</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script defer>
+        // --- FINAL, PROFESSIONAL & WORKING SCRIPT ---
+
+        // --- DOM Element Setup ---
+        const body = document.body;
+        const loginBox = document.getElementById('login-box');
+        const flipper = document.getElementById('flipper');
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        const showRegisterLink = document.getElementById('show-register-link');
+        const showLoginLink = document.getElementById('show-login-link');
+        
+        let particlesArray = [];
+        let mouseMoveUpdateQueued = false;
+        let resizeTimeout;
+
+        // --- Performance Manager ---
+        const PerformanceManager = {
+            level: 'HIGH',
+            initialize: function() {
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (prefersReducedMotion) {
+                    this.level = 'LOW';
+                    return;
+                }
+                const coreCount = navigator.hardwareConcurrency || 4;
+                if (coreCount <= 4) this.level = 'LOW';
             }
-            if (body.classList.contains('tilt-enabled')) {
-                const { clientX, clientY } = e;
-                const { innerWidth, innerHeight } = window;
-                const yRotation = 10 * ((clientX - innerWidth / 2) / innerWidth);
-                const xRotation = -10 * ((clientY - innerHeight / 2) / innerHeight);
-                loginBox.style.transform = `rotateY(${yRotation}deg) rotateX(${xRotation}deg)`;
-            }
+        };
+        PerformanceManager.initialize();
+        body.classList.add(`performance-${PerformanceManager.level.toLowerCase()}`);
+
+        // --- Mouse Move Handler for Tilt Effect ---
+        window.addEventListener('mousemove', (e) => {
+            if (mouseMoveUpdateQueued) return;
+            mouseMoveUpdateQueued = true;
+            requestAnimationFrame(() => {
+                if (body.classList.contains('aurora-enabled')) {
+                    body.style.setProperty('--mouse-x', `${e.clientX}px`);
+                    body.style.setProperty('--mouse-y', `${e.clientY}px`);
+                }
+                const isFlipped = flipper.classList.contains('show-register');
+                if (body.classList.contains('tilt-enabled') && !isFlipped) {
+                    const { clientX, clientY } = e;
+                    const { innerWidth, innerHeight } = window;
+                    const yRotation = 10 * ((clientX - innerWidth / 2) / innerWidth);
+                    const xRotation = -10 * ((clientY - innerHeight / 2) / innerHeight);
+                    flipper.style.transform = `rotateY(${yRotation}deg) rotateX(${xRotation}deg)`;
+                }
+            });
             mouseMoveUpdateQueued = false;
         });
-    });
 
-    // --- Settings & Theme Logic ---
-    document.getElementById('theme-switcher').addEventListener('click', () => {
-        const isDark = body.classList.toggle('theme-dark');
-        body.classList.toggle('theme-light', !isDark);
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        setTimeout(initParticles, 50);
-    });
+        // --- UI Controls (Theme, Settings, Flip) ---
+        document.getElementById('theme-switcher').addEventListener('click', () => {
+            const isDark = body.classList.toggle('theme-dark');
+            body.classList.toggle('theme-light', !isDark);
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            setTimeout(initParticles, 50);
+        });
 
-    document.getElementById('settings-toggle').addEventListener('click', () => {
-        document.getElementById('settings-panel').classList.toggle('visible');
-    });
+        document.getElementById('settings-toggle').addEventListener('click', () => {
+            document.getElementById('settings-panel').classList.toggle('visible');
+        });
 
-    const auroraToggle = document.getElementById('aurora-toggle');
-    auroraToggle.addEventListener('change', () => body.classList.toggle('aurora-enabled', auroraToggle.checked));
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            flipper.style.transform = ''; // Clear tilt before flipping
+            loginBox.classList.add('show-register');
+            flipper.classList.add('show-register');
+        });
 
-    const tiltToggle = document.getElementById('tilt-toggle');
-    tiltToggle.addEventListener('change', () => {
-        body.classList.toggle('tilt-enabled', tiltToggle.checked);
-        if (!tiltToggle.checked) loginBox.style.transform = '';
-    });
-    
-    function setInitialState() {
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        body.className = `theme-${savedTheme}`;
-        body.classList.add(PerformanceManager.level === 'LOW' ? 'performance-low' : 'performance-high');
-        auroraToggle.checked = true;
-        tiltToggle.checked = true;
-        body.classList.add('aurora-enabled', 'tilt-enabled');
-    }
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            flipper.style.transform = ''; // Clear tilt before flipping back
+            loginBox.classList.remove('show-register');
+            flipper.classList.remove('show-register');
+        });
 
-    // --- Simplified Form Logic ---
-    function updateFormState() {
-        const isEmailValid = emailInput.value.length > 0 && emailInput.checkValidity();
-        const isPasswordValid = passwordInput.value.length > 5; // A basic check for password length
-        submitBtn.classList.toggle('ready', isEmailValid && isPasswordValid);
-    }
-    
-    passwordInput.addEventListener('input', updateFormState);
-    emailInput.addEventListener('input', updateFormState);
+        const auroraToggle = document.getElementById('aurora-toggle');
+        auroraToggle.addEventListener('change', () => body.classList.toggle('aurora-enabled', auroraToggle.checked));
 
-    // --- Form Submission ---
-    document.getElementById('login-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!submitBtn.classList.contains('ready')) {
-            loginBox.classList.add('shake');
-            setTimeout(() => loginBox.classList.remove('shake'), 500);
-            return;
+        const tiltToggle = document.getElementById('tilt-toggle');
+        tiltToggle.addEventListener('change', () => {
+            body.classList.toggle('tilt-enabled', tiltToggle.checked);
+            if (!tiltToggle.checked) {
+                flipper.style.transform = '';
+            }
+        });
+
+        function setInitialState() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            body.className = `theme-${savedTheme}`;
+            body.classList.add(`performance-${PerformanceManager.level.toLowerCase()}`);
+            auroraToggle.checked = true;
+            tiltToggle.checked = true;
+            body.classList.add('aurora-enabled', 'tilt-enabled');
         }
-        submitBtn.classList.add('fly-away');
-    });
 
-    // --- ADAPTIVE Particle System ---
-    class Particle {
-        constructor(x,y,dirX,dirY,size,color){this.x=x;this.y=y;this.dirX=dirX;this.dirY=dirY;this.size=size;this.color=color;this.twinkleSpeed=Math.random()*0.05+0.01;this.alpha=Math.random();}
-        draw(){ctx.beginPath();const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.size);g.addColorStop(0,`rgba(255,255,255,${this.alpha*.9})`);g.addColorStop(.4,`rgba(${this.color},${this.alpha*.7})`);g.addColorStop(1,`rgba(${this.color},0)`);ctx.fillStyle=g;ctx.arc(this.x,this.y,this.size,0,Math.PI*2,false);ctx.fill();}
-        update(){if(this.x>canvas.width+this.size||this.x<0-this.size)this.dirX=-this.dirX;if(this.y>canvas.height+this.size||this.y<0-this.size)this.dirY=-this.dirY;this.alpha+=this.twinkleSpeed;if(this.alpha>1||this.alpha<0)this.twinkleSpeed*=-1;this.x+=this.dirX;this.y+=this.dirY;this.draw();}
-    }
-    function initParticles() {
-        particlesArray=[];
-        // 🚀 تعداد ذرات برای دستگاه ضعیف بسیار کمتر است
-        const baseDensity = PerformanceManager.level === 'LOW' ? 90000 : 30000;
-        let num=(canvas.width*canvas.height)/baseDensity;
-        let color=getComputedStyle(body).getPropertyValue('--particle-color-rgb').trim();
-        for(let i=0;i<num;i++){let size=Math.random()*3+1.5;let x=Math.random()*innerWidth;let y=Math.random()*innerHeight;let dirX=Math.random()*.2-.1;let dirY=Math.random()*.2-.1;particlesArray.push(new Particle(x,y,dirX,dirY,size,color));}
-    }
-    function animateParticles() {requestAnimationFrame(animateParticles);ctx.clearRect(0,0,innerWidth,innerHeight);for(let i=0;i<particlesArray.length;i++){particlesArray[i].update();}}
-    
-    // --- Utility Functions ---
-    function setCanvasSize() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
-    // 🚀 بهینه‌سازی رویداد تغییر سایز صفحه برای جلوگیری از لگ
-    window.addEventListener('resize', ()=>{
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            setCanvasSize();
-            initParticles();
-        }, 250); // تنها پس از اتمام تغییر سایز، به‌روزرسانی می‌شود
-    });
-    function togglePassword(event){event.stopPropagation();const isPassword=passwordInput.type==="password";passwordInput.type=isPassword?"text":"password";document.getElementById('eye-icon').classList.toggle("fa-eye-slash",isPassword);document.getElementById('eye-icon').classList.toggle("fa-eye",!isPassword);}
+        // --- Form Submission & Validation ---
+        const loginForm = document.getElementById('login-form');
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = loginForm.querySelector('#email').value;
+            const password = loginForm.querySelector('#password').value;
+            const errorMessage = loginForm.querySelector('#login-error-message');
+            
+            if (email && password) {
+                console.log('Login attempt:', { email, password });
+                loginForm.querySelector('.submit-btn').textContent = 'Success!';
+            } else {
+                errorMessage.textContent = 'Please fill in all fields.';
+                errorMessage.style.display = 'block';
+                loginBox.classList.add('shake');
+                setTimeout(() => loginBox.classList.remove('shake'), 500);
+            }
+        });
+        loginForm.addEventListener('input', () => {
+            loginForm.querySelector('#login-error-message').style.display = 'none';
+        });
 
-    // --- Initial Load ---
-    setInitialState();
-    setCanvasSize();
-    initParticles();
-    animateParticles();
-</script>
+        const registerForm = document.getElementById('register-form');
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Register form submitted');
+        });
+
+        // --- Particle System ---
+        class Particle {
+            constructor(x,y,dirX,dirY,size,color){this.x=x;this.y=y;this.dirX=dirX;this.dirY=dirY;this.size=size;this.color=color;this.twinkleSpeed=Math.random()*0.05+0.01;this.alpha=Math.random();}
+            draw(){ctx.beginPath();const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.size);g.addColorStop(0,`rgba(255,255,255,${this.alpha*.9})`);g.addColorStop(.4,`rgba(${this.color},${this.alpha*.7})`);g.addColorStop(1,`rgba(${this.color},0)`);ctx.fillStyle=g;ctx.arc(this.x,this.y,this.size,0,Math.PI*2,false);ctx.fill();}
+            update(){if(this.x>canvas.width+this.size||this.x<0-this.size)this.dirX=-this.dirX;if(this.y>canvas.height+this.size||this.y<0-this.size)this.dirY=-this.dirY;this.alpha+=this.twinkleSpeed;if(this.alpha>1||this.alpha<0)this.twinkleSpeed*=-1;this.x+=this.dirX;this.y+=this.dirY;this.draw();}
+        }
+        function initParticles() {
+            particlesArray=[];
+            const baseDensity = PerformanceManager.level==='LOW'?90000:30000;
+            let num=(canvas.width*canvas.height)/baseDensity;
+            let color=getComputedStyle(body).getPropertyValue('--particle-color-rgb').trim();
+            for(let i=0;i<num;i++){let size=Math.random()*3+1.5;let x=Math.random()*innerWidth;let y=Math.random()*innerHeight;let dirX=Math.random()*.2-.1;let dirY=Math.random()*.2-.1;particlesArray.push(new Particle(x,y,dirX,dirY,size,color));}
+        }
+        function animateParticles() { requestAnimationFrame(animateParticles); ctx.clearRect(0,0,innerWidth,innerHeight); for(let p of particlesArray) p.update(); }
+
+        // --- Utility Functions ---
+        function setCanvasSize() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+        window.addEventListener('resize', ()=>{
+            clearTimeout(resizeTimeout);
+            resizeTimeout=setTimeout(()=>{setCanvasSize();initParticles();}, 250);
+        });
+        function togglePassword(event, inputId, iconId){
+            event.stopPropagation();
+            const passwordInput = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            const isPassword = passwordInput.type === "password";
+            passwordInput.type = isPassword ? "text" : "password";
+            icon.classList.toggle("fa-eye-slash", isPassword);
+            icon.classList.toggle("fa-eye", !isPassword);
+        }
+
+        // --- Initial Load ---
+        setInitialState();
+        setCanvasSize();
+        initParticles();
+        animateParticles();
+    </script>
+</body>
+</html>
